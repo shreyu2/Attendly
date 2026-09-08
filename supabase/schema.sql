@@ -13,11 +13,23 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   email TEXT,
   avatar_url TEXT,
   target_percentage NUMERIC(5, 2) DEFAULT 80.00 NOT NULL,
-  semester TEXT DEFAULT 'Semester 5',
-  department TEXT DEFAULT 'Computer Science & Engineering',
+  semester TEXT DEFAULT NULL,
+  department TEXT DEFAULT NULL,
   created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
+
+-- Remove legacy demo academic values while preserving any real user-entered values.
+UPDATE public.profiles
+SET semester = NULL
+WHERE semester = 'Semester 5';
+
+UPDATE public.profiles
+SET department = NULL
+WHERE department IN ('CSE', 'Computer Science', 'Computer Science & Engineering');
+
+ALTER TABLE public.profiles ALTER COLUMN semester SET DEFAULT NULL;
+ALTER TABLE public.profiles ALTER COLUMN department SET DEFAULT NULL;
 
 -- ==============================================================================
 -- 2. Subjects Table

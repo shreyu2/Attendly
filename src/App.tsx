@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { Layout } from './components/layout/Layout';
 import { Login } from './pages/Login';
+import { Landing } from './pages/Landing';
 import { Dashboard } from './pages/Dashboard';
 import { TodayAttendance } from './pages/TodayAttendance';
 import { Subjects } from './pages/Subjects';
@@ -37,12 +38,24 @@ const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }
   return children;
 };
 
+const PublicHome: React.FC = () => {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <div className="min-h-screen bg-background" />;
+  }
+
+  return user ? <Navigate to="/dashboard" replace /> : <Landing />;
+};
+
 export const App: React.FC = () => {
   const { user } = useAuth();
 
   return (
     <Routes>
+      <Route path="/" element={<PublicHome />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Login mode="signup" />} />
 
       <Route
         path="/"
@@ -52,7 +65,6 @@ export const App: React.FC = () => {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="today" element={<TodayAttendance />} />
         <Route path="subjects" element={<Subjects />} />

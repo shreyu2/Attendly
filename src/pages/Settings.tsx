@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useAttendance } from '../context/AttendanceContext';
 import { GlassCard } from '../components/ui/GlassCard';
@@ -10,6 +10,18 @@ export const Settings: React.FC = () => {
 
   const [isSavingTarget, setIsSavingTarget] = useState(false);
   const [localTarget, setLocalTarget] = useState(globalTarget);
+  const [name, setName] = useState('');
+  const [semester, setSemester] = useState('');
+  const [department, setDepartment] = useState('');
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileMessage, setProfileMessage] = useState<string | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setName(profile?.name || '');
+    setSemester(profile?.semester || '');
+    setDepartment(profile?.department || '');
+  }, [profile?.id]);
 
   const handleGlobalTargetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = Math.max(50, Math.min(100, parseInt(e.target.value) || 80));
@@ -40,12 +52,25 @@ export const Settings: React.FC = () => {
     await signOut();
   };
 
-  const handleProfileUpdate = async (field: string, value: string) => {
+  const saveProfile = async (event: React.FormEvent) => {
+    event.preventDefault();
     if (!profile || !user) return;
+
+    setIsSavingProfile(true);
+    setProfileMessage(null);
+    setProfileError(null);
     try {
-      await updateProfile({ [field]: value } as Partial<typeof profile>);
+      await updateProfile({
+        name: name.trim(),
+        semester: semester.trim(),
+        department: department.trim(),
+      });
+      setProfileMessage('Saved successfully');
     } catch (err) {
       console.error('Profile update failed:', err);
+      setProfileError(err instanceof Error ? err.message : 'Could not save your profile.');
+    } finally {
+      setIsSavingProfile(false);
     }
   };
 
@@ -79,11 +104,11 @@ export const Settings: React.FC = () => {
                 <span className="material-symbols-outlined text-[20px]">person</span>
               </div>
               <h3 className="font-headline-md text-headline-md text-on-surface font-semibold">
-                Google Profile
+                Profile
               </h3>
             </div>
             <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
-              Information synced from your Google account. Changes to name and photo must be made in your Google Account settings.
+              Your Attendly display name can be customized here. Your Google account email is read-only.
             </p>
           </div>
 
@@ -103,7 +128,7 @@ export const Settings: React.FC = () => {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-space-sm">
                   <span className="font-title-md text-title-md text-on-surface font-semibold truncate">
-                    {profile?.name || user?.user_metadata?.full_name || 'Student'}
+                    {profile?.name || 'Student'}
                   </span>
                 </div>
                 <div className="font-body-sm text-body-sm text-outline mt-1 flex flex-wrap gap-space-sm">
@@ -113,33 +138,53 @@ export const Settings: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-space-md rounded-xl bg-surface-container-low/60 border border-white/5">
+            <form onSubmit={saveProfile} className="p-space-md rounded-xl bg-surface-container-low/60 border border-white/5">
               <span className="font-label-caps text-label-caps text-on-surface-variant uppercase font-bold block mb-space-sm">
-                Academic Info
+                Profile Details
               </span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-md">
-                <div>
-                  <label className="font-label-caps text-label-caps text-outline block mb-1">Semester</label>
+              <div className="grid grid-cols-1 gap-space-md sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label className="font-label-caps text-label-caps text-outline block mb-1" htmlFor="attendly-name">Name</label>
                   <input
+                    id="attendly-name"
                     type="text"
-                    value={profile?.semester || ''}
-                    onChange={e => handleProfileUpdate('semester', e.target.value)}
+                    value={name}
+                    onChange={e => setName(e.target.value)}
                     className="w-full px-space-sm py-space-xs rounded-lg bg-surface-container-highest border border-white/10 text-on-surface focus:outline-none focus:border-primary font-body-md"
-                    placeholder="e.g., Semester 5"
+                    placeholder="Enter your Attendly display name"
                   />
                 </div>
                 <div>
-                  <label className="font-label-caps text-label-caps text-outline block mb-1">Department</label>
+                  <label className="font-label-caps text-label-caps text-outline block mb-1" htmlFor="semester">Semester</label>
                   <input
+                    id="semester"
                     type="text"
-                    value={profile?.department || ''}
-                    onChange={e => handleProfileUpdate('department', e.target.value)}
+                    value={semester}
+                    onChange={e => setSemester(e.target.value)}
                     className="w-full px-space-sm py-space-xs rounded-lg bg-surface-container-highest border border-white/10 text-on-surface focus:outline-none focus:border-primary font-body-md"
-                    placeholder="e.g., Computer Science & Engineering"
+                    placeholder="Enter your semester"
+                  />
+                </div>
+                <div>
+                  <label className="font-label-caps text-label-caps text-outline block mb-1" htmlFor="department">Department</label>
+                  <input
+                    id="department"
+                    type="text"
+                    value={department}
+                    onChange={e => setDepartment(e.target.value)}
+                    className="w-full px-space-sm py-space-xs rounded-lg bg-surface-container-highest border border-white/10 text-on-surface focus:outline-none focus:border-primary font-body-md"
+                    placeholder="Enter your department"
                   />
                 </div>
               </div>
-            </div>
+              <div className="mt-space-md flex flex-wrap items-center gap-space-sm">
+                <GlassButton type="submit" variant="primary" size="sm" icon="save" disabled={isSavingProfile}>
+                  {isSavingProfile ? 'Saving...' : 'Save Changes'}
+                </GlassButton>
+                {profileMessage && <span className="font-body-sm text-body-sm text-tertiary">{profileMessage}</span>}
+                {profileError && <span className="font-body-sm text-body-sm text-error">{profileError}</span>}
+              </div>
+            </form>
           </div>
 
           {/* Sign Out */}

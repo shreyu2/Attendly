@@ -4,6 +4,15 @@ You are working on **Attendly**, a real, multi-user, deployable personal college
 
 This file is the project's persistent memory. It must be kept up to date throughout development.
 
+## Latest Implementation Update (2026-09-08)
+- `/` is a public landing page for logged-out visitors and redirects authenticated users to `/dashboard`.
+- `/login` and `/signup` are separate Google OAuth entry points using the existing Supabase auth flow; OAuth redirects use the absolute `window.location.origin`.
+- Profiles use the Google name/avatar/email only when a profile is first created. Existing `profiles.name`, `semester`, and `department` values are preserved on later sessions.
+- Settings now saves the editable Attendly display name, semester, and department explicitly to `profiles`, with saving, success, and error feedback. Email remains read-only.
+- New profile academic fields are empty by default. The schema migration clears only the legacy demo values (`Semester 5`, `CSE`, `Computer Science`, and `Computer Science & Engineering`) and changes future defaults to `NULL`.
+- Overall safe-skip allowance is calculated from aggregate attended/conducted counts, while subject-level allowances continue to use each subject's effective target.
+- Verified with `npm run build` after routing/profile changes and again after the Settings changes. The build passes; Vite reports only its existing large-chunk warning. Supabase OAuth and two-user RLS behavior require configured external accounts and were not executed locally.
+
 ---
 
 # CURRENT STATE

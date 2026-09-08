@@ -130,7 +130,6 @@ export function computeOverallStats(
   let totalAttended = 0;
   let totalAbsent = 0;
   let totalCancelled = 0;
-  let totalSafeSkips = 0;
   let subjectsAtRiskCount = 0;
 
   for (const subject of subjects) {
@@ -138,7 +137,6 @@ export function computeOverallStats(
     totalAttended += stats.attended;
     totalAbsent += stats.absent;
     totalCancelled += stats.cancelled;
-    totalSafeSkips += stats.safeSkips;
     if (stats.percentage !== null && stats.percentage < stats.effectiveTarget) {
       subjectsAtRiskCount += 1;
     }
@@ -146,6 +144,7 @@ export function computeOverallStats(
 
   const totalConducted = totalAttended + totalAbsent;
   const percentage = calculateAttendancePercentage(totalAttended, totalConducted);
+  const totalSafeSkips = calculateSafeSkips(totalAttended, totalConducted, globalTarget);
 
   let status: OverallStats['status'] = 'No Data';
   if (percentage !== null) {

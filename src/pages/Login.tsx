@@ -1,13 +1,23 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
   import { isSupabaseConfigured } from '../lib/supabase';
 import { GlassCard } from '../components/ui/GlassCard';
 import { GlassButton } from '../components/ui/GlassButton';
 import { Logo } from '../components/ui/Logo';
 
-export const Login: React.FC = () => {
-  const { signInWithGoogle, isLoading } = useAuth();
+interface LoginProps {
+  mode?: 'signin' | 'signup';
+}
+
+export const Login: React.FC<LoginProps> = ({ mode = 'signin' }) => {
+  const { signInWithGoogle, isLoading, user } = useAuth();
+  const navigate = useNavigate();
   const [isSigningIn, setIsSigningIn] = useState(false);
+
+  useEffect(() => {
+    if (user) navigate('/dashboard', { replace: true });
+  }, [navigate, user]);
 
   const handleGoogleSignIn = async () => {
     setIsSigningIn(true);
@@ -45,10 +55,12 @@ export const Login: React.FC = () => {
               <span className="material-symbols-outlined text-[28px]">login</span>
             </span>
             <h2 className="font-headline-md text-headline-md text-on-surface">
-              Sign in to continue
+              {mode === 'signup' ? 'Create your Attendly account' : 'Sign in to continue'}
             </h2>
             <p className="font-body-md text-body-md text-on-surface-variant mt-space-xs">
-              Secure Google authentication. Your data stays private.
+              {mode === 'signup'
+                ? 'Start tracking with secure Google authentication.'
+                : 'Secure Google authentication. Your data stays private.'}
             </p>
           </div>
 
@@ -116,8 +128,15 @@ export const Login: React.FC = () => {
 
         </GlassCard>
 
-        {/* Feature Highlights */}
-        
+        <p className="text-center font-body-sm text-body-sm text-on-surface-variant mt-space-lg">
+          {mode === 'signup' ? 'Already have an account? ' : 'New to Attendly? '}
+          <a
+            href={mode === 'signup' ? '/login' : '/signup'}
+            className="text-primary underline underline-offset-2"
+          >
+            {mode === 'signup' ? 'Sign in' : 'Sign up'}
+          </a>
+        </p>
 
         <p className="text-center font-label-caps text-label-caps text-outline mt-space-2xl uppercase tracking-wider">
           Built for students, by students.

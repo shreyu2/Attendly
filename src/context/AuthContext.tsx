@@ -69,10 +69,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: authUser.email || '',
           avatar_url: authUser.user_metadata?.avatar_url || '',
           target_percentage: 80.0,
-          semester: 'Semester 5',
-          department: 'Computer Science & Engineering',
+          semester: '',
+          department: '',
         };
-        await supabase.from('profiles').upsert(newProf);
+        const { error: createError } = await supabase.from('profiles').upsert(newProf);
+        if (createError) throw createError;
         setProfile(newProf);
       }
     } catch (err) {
@@ -103,16 +104,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateProfile = async (updated: Partial<Profile>) => {
-    if (!profile || !user) return;
+    if (!profile || !user) throw new Error('You must be signed in to update your profile.');
     const newProf = { ...profile, ...updated };
-    setProfile(newProf);
 
-    const { error } = await supabase.from('profiles').update(updated).eq('id', user.id);
+    const { data, error } = await supabase
+      .from('profiles')
+      .update(updated)
+      .eq('id', user.id)
+      .select()
+      .single();
     if (error) {
       console.error('Profile update error:', error);
-      // Revert on error
-      setProfile(profile);
+      throw new Error(error.message || 'Failed to save your profile.');
     }
+
+    setProfile(data || newProf);
   };
 
   return (

@@ -102,7 +102,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCanSkipTomorrow }) => {
           >
             <div className="hidden lg:flex flex-col text-right">
               <span className="font-title-sm text-title-sm text-on-surface leading-tight group-hover:text-primary transition-colors">
-                {profile?.name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'My Account'}
+                {profile?.name || 'My Account'}
               </span>
               <span className="font-label-caps text-label-caps text-on-surface-variant">
                 {profile?.semester ? `${profile.semester}` : 'Student'}
