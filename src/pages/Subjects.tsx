@@ -22,6 +22,8 @@ export const Subjects: React.FC = () => {
   const [filter, setFilter] = useState<'all' | 'danger' | 'safe'>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Form State
   const [name, setName] = useState('');
@@ -39,6 +41,8 @@ export const Subjects: React.FC = () => {
     setRoom('');
     setCredits('3.0');
     setEditingSubject(null);
+    setSaveError(null);
+    setIsSaving(false);
     setIsAddModalOpen(true);
   };
 
@@ -50,37 +54,55 @@ export const Subjects: React.FC = () => {
     setRoom(sub.room || '');
     setCredits(String(sub.credits || 3.0));
     setEditingSubject(sub);
+    setSaveError(null);
+    setIsSaving(false);
     setIsAddModalOpen(true);
   };
 
   const handleSaveSubject = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !code.trim()) return;
+    const trimmedName = name.trim();
+    const trimmedCode = code.trim();
+
+    if (!trimmedName || !trimmedCode) {
+      setSaveError('Subject Name and Subject Code are required.');
+      return;
+    }
 
     const parsedTarget = customTarget.trim() ? parseFloat(customTarget) : null;
     const parsedCredits = parseFloat(credits) || 3.0;
 
-    if (editingSubject) {
-      await updateSubject(editingSubject.id, {
-        name,
-        code: code.toUpperCase(),
-        target_percentage: parsedTarget,
-        faculty,
-        room,
-        credits: parsedCredits,
-      });
-    } else {
-      await addSubject({
-        name,
-        code: code.toUpperCase(),
-        target_percentage: parsedTarget,
-        faculty,
-        room,
-        credits: parsedCredits,
-      });
-    }
+    setIsSaving(true);
+    setSaveError(null);
 
-    setIsAddModalOpen(false);
+    try {
+      if (editingSubject) {
+        await updateSubject(editingSubject.id, {
+          name: trimmedName,
+          code: trimmedCode.toUpperCase(),
+          target_percentage: parsedTarget,
+          faculty: faculty.trim() || undefined,
+          room: room.trim() || undefined,
+          credits: parsedCredits,
+        });
+      } else {
+        await addSubject({
+          name: trimmedName,
+          code: trimmedCode.toUpperCase(),
+          target_percentage: parsedTarget,
+          faculty: faculty.trim() || undefined,
+          room: room.trim() || undefined,
+          credits: parsedCredits,
+        });
+      }
+
+      setIsAddModalOpen(false);
+    } catch (err: any) {
+      console.error('[Subjects] Failed to save subject:', err);
+      setSaveError(err.message || 'An error occurred while saving the subject. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -417,6 +439,13 @@ export const Subjects: React.FC = () => {
         subtitle="Configure syllabus name, code, faculty, and custom target cutoff"
       >
         <form onSubmit={handleSaveSubject} className="flex flex-col gap-space-md">
+          {saveError && (
+            <div className="p-space-sm rounded-xl bg-error-container/25 border border-error/40 text-error flex items-start gap-space-xs text-body-sm animate-fadeIn">
+              <span className="material-symbols-outlined text-[18px] mt-0.5 shrink-0">error</span>
+              <div className="flex-1 leading-snug">{saveError}</div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-md">
             <div>
               <label className="font-label-caps text-label-caps text-on-surface-variant uppercase block mb-1">
@@ -508,11 +537,27 @@ export const Subjects: React.FC = () => {
           </div>
 
           <div className="pt-space-md border-t border-white/5 flex items-center justify-end gap-space-sm">
-            <GlassButton variant="ghost" type="button" onClick={() => setIsAddModalOpen(false)}>
+            <GlassButton
+              variant="ghost"
+              type="button"
+              onClick={() => setIsAddModalOpen(false)}
+              disabled={isSaving}
+            >
               Cancel
             </GlassButton>
-            <GlassButton variant="primary" type="submit">
-              {editingSubject ? 'Save Changes' : 'Create Subject'}
+            <GlassButton
+              variant="primary"
+              type="submit"
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-on-primary/30 border-t-on-primary rounded-full animate-spin mr-1.5" />
+                  <span>{editingSubject ? 'Saving...' : 'Creating...'}</span>
+                </>
+              ) : (
+                editingSubject ? 'Save Changes' : 'Create Subject'
+              )}
             </GlassButton>
           </div>
         </form>

@@ -32,41 +32,43 @@ This file is the project's persistent memory. It must be kept up to date through
 
 ---
 
-# DATABASE SCHEMA & RLS AUDIT
+# DATABASE SCHEMA & LEAST-PRIVILEGE SECURITY AUDIT
 
-All database tables are defined in `supabase/schema.sql`:
+All database tables, policies, and role grants are defined in `supabase/schema.sql`:
 
-### 1. `profiles`
-- **Columns**: `id (UUID PK -> auth.users.id ON DELETE CASCADE)`, `name (TEXT)`, `email (TEXT)`, `avatar_url (TEXT)`, `target_percentage (NUMERIC, DEFAULT 80.0)`, `semester (TEXT)`, `department (TEXT)`, `created_at`, `updated_at`
-- **RLS**: Enabled.
-  - `SELECT`: `auth.uid() = id`
-  - `INSERT`: `auth.uid() = id`
-  - `UPDATE`: `auth.uid() = id`
+### 1. Security Architecture (Principle of Least Privilege)
+- **Role `anon` (Unauthenticated)**:
+  - `USAGE` on schema `public` for API gateway routing.
+  - `SELECT` on `public.profiles` only (strictly filtered by RLS: `auth.uid() = id` returns 0 rows).
+  - **Zero write privileges**: All broad permissions explicitly revoked (`REVOKE ALL ON ALL TABLES/SEQUENCES/ROUTINES`).
+  - Cannot access, read, insert, update, or delete rows in `subjects`, `timetable_entries`, or `attendance_records`.
+- **Role `authenticated` (Signed-in Students)**:
+  - Specific DML privileges only: `SELECT, INSERT, UPDATE, DELETE` on `subjects`, `timetable_entries`, `attendance_records`; `SELECT, INSERT, UPDATE` on `profiles`.
+  - Administrative rights (`TRUNCATE`, `TRIGGER`, `REFERENCES`) are omitted.
+  - Sequenced usage and routine execution allowed.
+- **Role `service_role` (Backend Administrative)**:
+  - Bypasses RLS by PostgreSQL design (`BYPASSRLS`). Never exposed to or utilized by frontend clients.
+- **Row-Level Security (RLS)**:
+  - Enabled and forced on all tables: `profiles`, `subjects`, `timetable_entries`, and `attendance_records`.
+  - `FORCE ROW LEVEL SECURITY` applied to prevent privilege escalation even by table owner roles.
+  - Strict tenant isolation: every operation requires `auth.uid() = user_id` (or `auth.uid() = id`).
+  - UPDATE operations include `WITH CHECK (auth.uid() = user_id)` to prevent reassigning records across users.
 
-### 2. `subjects`
-- **Columns**: `id (UUID PK)`, `user_id (UUID FK -> auth.users.id ON DELETE CASCADE)`, `name (TEXT)`, `code (TEXT)`, `target_percentage (NUMERIC NULLABLE)`, `credits (NUMERIC)`, `faculty (TEXT)`, `room (TEXT)`, `color (TEXT)`, `created_at`, `updated_at`
-- **RLS**: Enabled.
-  - `SELECT`: `auth.uid() = user_id`
-  - `INSERT`: `auth.uid() = user_id`
-  - `UPDATE`: `auth.uid() = user_id`
-  - `DELETE`: `auth.uid() = user_id`
+### 2. Table Specifications
+1. **`profiles`**: `id (UUID PK -> auth.users.id ON DELETE CASCADE)`, `name`, `email`, `avatar_url`, `target_percentage (DEFAULT 80.0)`, `semester`, `department`, `created_at`, `updated_at`
+2. **`subjects`**: `id (UUID PK DEFAULT gen_random_uuid())`, `user_id (UUID FK -> auth.users.id ON DELETE CASCADE)`, `name`, `code`, `target_percentage (NULLABLE)`, `credits (DEFAULT 3.0)`, `faculty`, `room`, `color (DEFAULT 'primary')`, `created_at`, `updated_at`
+3. **`timetable_entries`**: `id (UUID PK DEFAULT gen_random_uuid())`, `user_id (UUID FK -> auth.users.id ON DELETE CASCADE)`, `subject_id (UUID FK -> subjects.id ON DELETE CASCADE)`, `day_of_week (INT 1-6 Mon-Sat)`, `start_time`, `end_time`, `class_type (DEFAULT 'Lecture')`, `room`, `created_at`, `updated_at`
+4. **`attendance_records`**: `id (UUID PK DEFAULT gen_random_uuid())`, `user_id (UUID FK -> auth.users.id ON DELETE CASCADE)`, `subject_id (UUID FK -> subjects.id ON DELETE CASCADE)`, `timetable_entry_id (UUID FK -> timetable_entries.id ON DELETE SET NULL)`, `date (DATE)`, `status (CHECK 'present','absent','cancelled')`, `notes`, `created_at`, `updated_at`
 
-### 3. `timetable_entries`
-- **Columns**: `id (UUID PK)`, `user_id (UUID FK -> auth.users.id ON DELETE CASCADE)`, `subject_id (UUID FK -> subjects.id ON DELETE CASCADE)`, `day_of_week (INT 1-6 Mon-Sat)`, `start_time (TIME)`, `end_time (TIME)`, `class_type (TEXT: Lecture, Lab, Tutorial, Other)`, `room (TEXT)`, `created_at`, `updated_at`
-- **RLS**: Enabled.
-  - `SELECT`: `auth.uid() = user_id`
-  - `INSERT`: `auth.uid() = user_id`
-  - `UPDATE`: `auth.uid() = user_id`
-  - `DELETE`: `auth.uid() = user_id`
-
-### 4. `attendance_records`
-- **Columns**: `id (UUID PK)`, `user_id (UUID FK -> auth.users.id ON DELETE CASCADE)`, `subject_id (UUID FK -> subjects.id ON DELETE CASCADE)`, `timetable_entry_id (UUID FK -> timetable_entries.id ON DELETE SET NULL)`, `date (DATE)`, `status (TEXT: present, absent, cancelled)`, `notes (TEXT)`, `created_at`, `updated_at`
-- **Unique Constraint**: `(user_id, subject_id, date, COALESCE(timetable_entry_id, '00000000-0000-0000-0000-000000000000'))` to prevent duplicate logs.
-- **RLS**: Enabled.
-  - `SELECT`: `auth.uid() = user_id`
-  - `INSERT`: `auth.uid() = user_id`
-  - `UPDATE`: `auth.uid() = user_id`
-  - `DELETE`: `auth.uid() = user_id`
+### 3. Automated Verification Matrix
+- **Test 1.1 & 1.2**: Anon `SELECT` and `INSERT` on `subjects` denied at privilege layer (`insufficient_privilege`).
+- **Test 2.1**: Authenticated User A creates and views own subjects.
+- **Test 3.1**: Authenticated User B queries subjects and receives 0 rows (User A subjects completely invisible).
+- **Test 4.1**: Authenticated User B attempts update on User A subject -> 0 rows affected.
+- **Test 5.1**: Authenticated User B attempts delete on User A subject -> 0 rows affected.
+- **Test 6.1**: Authenticated User B attempts insert with `user_id = User A` -> RLS `WITH CHECK` violation (`42501`).
+- **Test 7.1**: Authenticated User A attempts to reassign `user_id` to User B on update -> RLS `WITH CHECK` violation (`42501`).
+- **Test 8.1**: Authenticated User B creates own subject and sees only their own subject.
 
 ---
 

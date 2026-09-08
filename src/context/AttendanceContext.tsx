@@ -328,41 +328,95 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   // Subject CRUD
   const addSubject = async (subjectData: Omit<Subject, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    if (!user) return;
+    if (!user) {
+      const err = new Error('You must be signed in to add a subject. Please log in first.');
+      console.error('[AttendanceContext] Add subject error: User session not found');
+      throw err;
+    }
+
+    const payload = {
+      name: subjectData.name.trim(),
+      code: subjectData.code.trim().toUpperCase(),
+      target_percentage: subjectData.target_percentage ?? null,
+      credits: Number(subjectData.credits) || 3.0,
+      faculty: subjectData.faculty?.trim() || null,
+      room: subjectData.room?.trim() || null,
+      color: subjectData.color || 'primary',
+      user_id: user.id,
+    };
+
+    console.log('[AttendanceContext] Inserting subject for user:', user.id, payload);
 
     const { data, error } = await supabase
       .from('subjects')
-      .insert({ ...subjectData, user_id: user.id })
+      .insert(payload)
       .select()
       .single();
 
     if (error) {
-      console.error('Add subject error:', error);
-      throw error;
+      console.error('[AttendanceContext] Add subject Supabase error details:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+      });
+
+      if (error.code === 'PGRST205') {
+        throw new Error(
+          "The 'subjects' table was not found in your Supabase database (PGRST205). Please run the updated 'supabase/schema.sql' in your Supabase SQL Editor."
+        );
+      }
+      if (error.code === '42501') {
+        throw new Error(
+          'Permission denied by Row-Level Security (RLS). Please verify your user authentication and RLS policies.'
+        );
+      }
+      throw new Error(error.message || 'Failed to save subject to Supabase database.');
     }
 
-    setSubjects(prev => [...prev, data]);
+    if (!data) {
+      throw new Error('Supabase insert succeeded but returned empty data.');
+    }
+
+    console.log('[AttendanceContext] Subject inserted successfully:', data);
+
+    setSubjects(prev => {
+      const exists = prev.some(s => s.id === data.id);
+      return exists ? prev : [...prev, data];
+    });
+
+    return data;
   };
 
   const updateSubject = async (id: string, updated: Partial<Subject>) => {
-    if (!user) return;
+    if (!user) {
+      throw new Error('You must be signed in to update a subject.');
+    }
+
+    const sanitized: Partial<Subject> = { ...updated };
+    if (sanitized.name) sanitized.name = sanitized.name.trim();
+    if (sanitized.code) sanitized.code = sanitized.code.trim().toUpperCase();
+    if (sanitized.faculty !== undefined) sanitized.faculty = sanitized.faculty?.trim() || undefined;
+    if (sanitized.room !== undefined) sanitized.room = sanitized.room?.trim() || undefined;
 
     const { error } = await supabase
       .from('subjects')
-      .update(updated)
+      .update(sanitized)
       .eq('id', id)
       .eq('user_id', user.id);
 
     if (error) {
-      console.error('Update subject error:', error);
-      throw error;
+      console.error('[AttendanceContext] Update subject error:', error);
+      throw new Error(error.message || 'Failed to update subject in Supabase.');
     }
 
-    setSubjects(prev => prev.map(s => (s.id === id ? { ...s, ...updated } : s)));
+    setSubjects(prev => prev.map(s => (s.id === id ? { ...s, ...sanitized } : s)));
   };
 
   const deleteSubject = async (id: string) => {
-    if (!user) return;
+    if (!user) {
+      throw new Error('You must be signed in to delete a subject.');
+    }
 
     // Delete related attendance records first (cascade handled by DB but let's be explicit)
     await supabase.from('attendance_records').delete().eq('subject_id', id).eq('user_id', user.id);
@@ -375,8 +429,8 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       .eq('user_id', user.id);
 
     if (error) {
-      console.error('Delete subject error:', error);
-      throw error;
+      console.error('[AttendanceContext] Delete subject error:', error);
+      throw new Error(error.message || 'Failed to delete subject from Supabase.');
     }
 
     setSubjects(prev => prev.filter(s => s.id !== id));
