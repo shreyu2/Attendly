@@ -45,7 +45,26 @@ export const Landing: React.FC = () => {
             <GlassButton variant="secondary" size="lg" icon="person_add" onClick={() => navigate('/signup')}>Sign Up</GlassButton>
           </div>
         </div>
-        
+
+        <GlassCard variant="elevated" className="relative overflow-hidden p-space-lg sm:p-space-xl">
+          <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary-container/20 blur-3xl" />
+          <div className="relative">
+            <div className="mb-space-lg flex items-center justify-between">
+              <span className="font-label-caps text-label-caps uppercase tracking-wider text-primary">Your academic pulse</span>
+              <span className="material-symbols-outlined text-tertiary">monitoring</span>
+            </div>
+            <div className="mb-space-lg flex items-end gap-space-sm">
+              <span className="font-label-data-lg text-6xl font-bold text-on-surface">80%</span>
+              <span className="mb-2 font-body-sm text-body-sm text-on-surface-variant">target made visible</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-surface-container-lowest">
+              <div className="h-full w-4/5 rounded-full bg-tertiary" />
+            </div>
+            <p className="mt-space-lg font-body-md text-body-md text-on-surface-variant">
+              Add your own subjects and classes to turn this into a clear, private picture of your semester.
+            </p>
+          </div>
+        </GlassCard>
       </section>
 
       <section className="grid gap-space-sm sm:grid-cols-2 lg:grid-cols-3">
