@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { isSupabaseConfigured } from '../lib/supabase';
+  import { isSupabaseConfigured } from '../lib/supabase';
 import { GlassCard } from '../components/ui/GlassCard';
 import { GlassButton } from '../components/ui/GlassButton';
 import { Logo } from '../components/ui/Logo';
@@ -116,44 +116,7 @@ export const Login: React.FC = () => {
         </GlassCard>
 
         {/* Feature Highlights */}
-        <div className="mt-space-2xl grid grid-cols-1 sm:grid-cols-3 gap-space-md">
-          <GlassCard variant="base" className="p-space-lg text-center">
-            <div className="w-12 h-12 rounded-xl bg-tertiary-container/20 flex items-center justify-center mx-auto mb-space-sm">
-              <span className="material-symbols-outlined text-tertiary text-[24px]">check_circle</span>
-            </div>
-            <h3 className="font-title-md text-title-md text-on-surface font-semibold">
-              Rapid Logging
-            </h3>
-            <p className="font-body-sm text-body-sm text-on-surface-variant mt-space-xs">
-              Mark Present/Absent/Cancelled in one tap after each class.
-            </p>
-          </GlassCard>
-
-          <GlassCard variant="base" className="p-space-lg text-center">
-            <div className="w-12 h-12 rounded-xl bg-primary-container/20 flex items-center justify-center mx-auto mb-space-sm">
-              <span className="material-symbols-outlined text-primary text-[24px]">insights</span>
-            </div>
-            <h3 className="font-title-md text-title-md text-on-surface font-semibold">
-              Smart Analytics
-            </h3>
-            <p className="font-body-sm text-body-sm text-on-surface-variant mt-space-xs">
-              Safe skips, recovery paths, and what-if scenarios.
-            </p>
-          </GlassCard>
-
-          <GlassCard variant="base" className="p-space-lg text-center">
-            <div className="w-12 h-12 rounded-xl bg-secondary-container/20 flex items-center justify-center mx-auto mb-space-sm">
-              <span className="material-symbols-outlined text-secondary text-[24px]">cloud_sync</span>
-            </div>
-            <h3 className="font-title-md text-title-md text-on-surface font-semibold">
-              Cloud Sync
-            </h3>
-            <p className="font-body-sm text-body-sm text-on-surface-variant mt-space-xs">
-              Supabase PostgreSQL with row-level security. Access anywhere.
-            </p>
-          </GlassCard>
-
-        </div>
+        
 
         <p className="text-center font-label-caps text-label-caps text-outline mt-space-2xl uppercase tracking-wider">
           Built for students, by students.
