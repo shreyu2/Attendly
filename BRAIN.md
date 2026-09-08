@@ -14,7 +14,7 @@ This file is the project's persistent memory. It must be kept up to date through
 - Verified with `npm run build` after routing/profile changes and again after the Settings changes. The build passes; Vite reports only its existing large-chunk warning. Supabase OAuth and two-user RLS behavior require configured external accounts and were not executed locally.
 - Cloudflare Pages uses the Vite static output; `public/_redirects` rewrites non-file SPA routes to `/index.html` with status `200`, allowing React Router to handle refreshes without bypassing protected-route checks.
 - OAuth code contains no Vercel URL and sends Supabase an absolute `window.location.origin`, so the callback returns to the domain that started authentication. Supabase Dashboard should allow both `https://attendly-4x0.pages.dev/` and `https://attendly-teal-two.vercel.app/` under Authentication URL Configuration if both deployments remain active; use the Pages URL as the primary Site URL.
-- Live inspection on 2026-09-08 returned HTTP 200 for both `/` and `/dashboard` on Cloudflare Pages. A real Google OAuth round trip and deployment from this workspace were not performed because no deployment credentials or CLI configuration were available.
+- Live inspection on 2026-09-08 returned HTTP 200 for `/`, `/login`, and all requested protected-route URLs on Cloudflare Pages. Commit `5e08837` containing the Pages fallback was pushed to `main`; no Wrangler CLI or direct Cloudflare credentials are configured in this workspace. A real Google OAuth round trip still requires the configured Supabase/Google accounts.
 
 ---
 
