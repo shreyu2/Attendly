@@ -1,6 +1,5 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { GlassButton } from '../components/ui/GlassButton';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Logo } from '../components/ui/Logo';
 
