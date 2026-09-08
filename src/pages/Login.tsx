@@ -55,7 +55,6 @@ export const Login: React.FC = () => {
           <GlassButton
             variant="primary"
             size="lg"
-            icon="mail"
             onClick={handleGoogleSignIn}
             disabled={isLoading || isSigningIn}
             className="group"
