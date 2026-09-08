@@ -45,6 +45,7 @@ export const Landing: React.FC = () => {
             <GlassButton variant="secondary" size="lg" icon="person_add" onClick={() => navigate('/signup')}>Sign Up</GlassButton>
           </div>
         </div>
+        
       </section>
 
       <section className="grid gap-space-sm sm:grid-cols-2 lg:grid-cols-3">
